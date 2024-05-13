@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Serotonin English 2.0</string>
+    <string name="button_check">Проверить</string>
+    <string name="translate">Переведите фразу</string>
+</resources>
