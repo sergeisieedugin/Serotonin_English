@@ -1,10 +1,12 @@
 package com.example.serotoninenglish20.screens.guess
 
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -13,15 +15,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -43,7 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
@@ -52,15 +51,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.serotoninenglish20.R
 
 
 @Composable
-fun GuessView(guessViewModel: GuessViewModel) {
+fun GuessView(guessViewModel: GuessViewModel = viewModel()) {
     val guessSentence by guessViewModel.guessItems.observeAsState()
-    LaunchedEffect(Unit) {
-        guessViewModel.fetchSentence()
+
+    var showBottomSheet by rememberSaveable {
+        mutableStateOf(false)
     }
+
 
     val chosenWords = remember {
         guessViewModel.chosenWords
@@ -72,8 +74,7 @@ fun GuessView(guessViewModel: GuessViewModel) {
     Scaffold(
         topBar = {
             TopBar()
-        },
-
+        }
     ) { contentPadding ->
 
         Column(
@@ -101,7 +102,13 @@ fun GuessView(guessViewModel: GuessViewModel) {
                             modifier = Modifier
                                 .padding(end = dimensionResource(R.dimen.padding_small))
                         )
-                        Icon(imageVector = Icons.Default.HelpOutline, contentDescription = null)
+                        Icon(
+                            imageVector = Icons.Default.HelpOutline,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .clickable {
+                                    showBottomSheet = true
+                                })
                     }
 
                     Text(
@@ -140,7 +147,9 @@ fun GuessView(guessViewModel: GuessViewModel) {
                         guessViewModel.toChosenWords(it)
                     }
                     Button(
-                        onClick = { guessViewModel.checkAnswer() },
+                        onClick = {
+                            guessViewModel.checkAnswer()
+                        },
                         enabled = if (chosenWords.isEmpty()) false else true,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -152,10 +161,11 @@ fun GuessView(guessViewModel: GuessViewModel) {
                     }
                 }
             }
-            BottomSheet(guessViewModel)
+            InfoBottomSheet(guessViewModel, showBottomSheet) {
+                showBottomSheet = !showBottomSheet
+            }
         }
     }
-
 }
 
 
@@ -177,41 +187,45 @@ fun TopBar() {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BottomSheet(guessViewModel: GuessViewModel){
-    val formula_simple = listOf("[субъект] + [основа глагола] (+[s/es для 3-го лица ед.ч.)]", "[Вспомогательный глагол do/does] + [субъект] + [основа глагола] + ...?")
-    val example = listOf("I eat breakfast at 7 a.m. every day. (Я завтракаю в 7 утра каждый день.)", "She studies English at the language school. (Она изучает английский язык в языковой школе.)", "Do you like coffee? (Ты любишь кофе?)")
-    
+fun InfoBottomSheet(guessViewModel: GuessViewModel, showBottomSheet: Boolean, onClose: () -> Unit) {
     val description by guessViewModel.sentenceDescription.observeAsState()
     val sheetState = rememberModalBottomSheetState()
-    var showBottomSheet by remember { mutableStateOf(true) }
 
-    if (showBottomSheet){
-        ModalBottomSheet(onDismissRequest = { showBottomSheet = false },
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { onClose() },
             sheetState = sheetState,
             windowInsets = WindowInsets.navigationBars
         ) {
-            /*LaunchedEffect(Unit){
+            LaunchedEffect(Unit) {
                 guessViewModel.fetchDescription()
             }
-            description?.theme?.let { Text(text = it.description) }
-            description?.theme?.let { Text(text = it.sentenceFormula) }
-            description?.theme?.let { Text(text = it.questionFormula) }
-             */
-            Text(text = "Настоящее простое время, которое используется для обозначения регулярных действий, " +
-                    "фактов, общих правил, состояний и других событий, " +
-                    "которые происходят в настоящее время или регулярно повторяются.",
-                modifier = Modifier
-                    .padding(dimensionResource(id = R.dimen.padding_small)))
-            formula_simple.forEach(){
+            description?.theme?.let {
                 Text(
-                    text = it,
+                    text = it.description,
+                    modifier = Modifier
+                        .padding(dimensionResource(id = R.dimen.padding_small))
+                )
+            }
+            description?.theme?.let {
+                Text(
+                    text = it.sentenceFormula,
                     modifier = Modifier
                         .padding(dimensionResource(id = R.dimen.padding_small))
                         .border(BorderStroke(1.dp, Color.Gray), RoundedCornerShape(4.dp))
-                        .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp,)
-                    )
+                        .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp)
+                )
+            }
+            description?.theme?.let {
+                Text(
+                    text = it.questionFormula,
+                    modifier = Modifier
+                        .padding(dimensionResource(id = R.dimen.padding_small))
+                        .border(BorderStroke(1.dp, Color.Gray), RoundedCornerShape(4.dp))
+                        .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp)
+                )
             }
             Text(
                 text = "Примеры:",
@@ -219,13 +233,14 @@ fun BottomSheet(guessViewModel: GuessViewModel){
                 modifier = Modifier
                     .padding(dimensionResource(id = R.dimen.padding_small))
             )
-            example.forEach {
-                Text(text = it,
+            description?.theme?.examples?.forEach {
+                Text(
+                    text = it,
                     modifier = Modifier
                         .padding(
                             start = dimensionResource(id = R.dimen.padding_small),
                             end = dimensionResource(id = R.dimen.padding_small),
-                            bottom = dimensionResource(id = R.dimen.padding_small)
+                            bottom = dimensionResource(id = R.dimen.padding_medium)
                         )
                 )
             }
@@ -233,6 +248,14 @@ fun BottomSheet(guessViewModel: GuessViewModel){
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ValidBottomSheet(){
+    ModalBottomSheet(
+        onDismissRequest = { /*TODO*/ }) {
+
+    }
+}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -241,6 +264,7 @@ fun Chips(
     arrangement: Arrangement.Horizontal,
     clickable: (index: Int) -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     FlowRow(
         horizontalArrangement = arrangement
     ) {
@@ -249,10 +273,16 @@ fun Chips(
                 text = word,
                 fontSize = 20.sp,
                 modifier = Modifier
-                    .padding(end = 8.dp, top = 12.dp)
+                    .padding(
+                        end = dimensionResource(id = R.dimen.padding_small),
+                        top = 12.dp
+                    )
                     .border(BorderStroke(1.dp, Color.Gray), RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.onPrimary, RoundedCornerShape(8.dp))
-                    .clickable {
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null
+                    ) {
                         clickable(index)
                     }
                     .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp)
