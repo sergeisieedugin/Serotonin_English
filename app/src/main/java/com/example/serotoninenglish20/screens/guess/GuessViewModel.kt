@@ -1,7 +1,6 @@
 package com.example.serotoninenglish20.screens.guess
 
 import android.util.Log
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -52,7 +51,7 @@ class GuessViewModel: ViewModel(){
     fun checkAnswer(){
         viewModelScope.launch {
             try{
-                var checkValid = Api.retrofitService.checkAnswer(_guessItems.value!!.russianPhrase, chosenWords.joinToString(separator = ","))
+                val checkValid = Api.retrofitService.checkAnswer(_guessItems.value!!.russianPhrase, chosenWords.joinToString(separator = ","))
                 if (checkValid != null) {
                     Log.d("CheckAnswer", checkValid.toString())
                 }
