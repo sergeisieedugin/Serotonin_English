@@ -24,6 +24,10 @@ class GuessViewModel: ViewModel(){
     private val _guessFilters = MutableLiveData<Filters>()
     val guessFilters: LiveData<Filters> = _guessFilters
 
+    init {
+        fetchSentence()
+    }
+
     fun fetchSentence(){
         viewModelScope.launch {
             try {
