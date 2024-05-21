@@ -1,7 +1,5 @@
 package com.example.serotoninenglish20.screens.guess
 
-
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.Icon
@@ -51,8 +50,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.serotoninenglish20.R
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -63,6 +64,13 @@ fun GuessView(guessViewModel: GuessViewModel = viewModel()) {
         mutableStateOf(false)
     }
 
+    var isAnswerValid by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var showValidBottomSheet by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     val chosenWords = remember {
         guessViewModel.chosenWords
@@ -70,6 +78,7 @@ fun GuessView(guessViewModel: GuessViewModel = viewModel()) {
     val words = remember {
         guessViewModel.words
     }
+
 
     Scaffold(
         topBar = {
@@ -148,7 +157,10 @@ fun GuessView(guessViewModel: GuessViewModel = viewModel()) {
                     }
                     Button(
                         onClick = {
-                            guessViewModel.checkAnswer()
+                            guessViewModel.viewModelScope.launch {
+                                isAnswerValid = guessViewModel.checkAnswer()
+                                showValidBottomSheet = true
+                            }
                         },
                         enabled = if (chosenWords.isEmpty()) false else true,
                         modifier = Modifier
@@ -163,6 +175,9 @@ fun GuessView(guessViewModel: GuessViewModel = viewModel()) {
             }
             InfoBottomSheet(guessViewModel, showBottomSheet) {
                 showBottomSheet = !showBottomSheet
+            }
+           ValidBottomSheet(isAnswerValid = isAnswerValid, showValidBottomSheet = showValidBottomSheet) {
+               guessViewModel.fetchSentence()
             }
         }
     }
@@ -250,12 +265,67 @@ fun InfoBottomSheet(guessViewModel: GuessViewModel, showBottomSheet: Boolean, on
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ValidBottomSheet(){
-    ModalBottomSheet(
-        onDismissRequest = { /*TODO*/ }) {
+fun ValidBottomSheet(isAnswerValid: Boolean?, showValidBottomSheet: Boolean, getSentence: () -> Unit) {
+    val sheetState = rememberModalBottomSheetState()
+    if (showValidBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {  },
+            sheetState = sheetState,
+            windowInsets = WindowInsets.navigationBars,
+            dragHandle = null
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        dimensionResource(id = R.dimen.padding_large)
+                    )
+            ) {
+                if (isAnswerValid == false){
+                    Text(
+                        text = "Не верно"
+                    )
+                } else{
+                    Text(
+                        text = "Верно",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }
 
+
+
+                Column {
+                    Text(
+                        text = stringResource(id = R.string.answer),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier
+                            .padding(
+                                top = dimensionResource(id = R.dimen.padding_medium)
+                            )
+                    )
+                    Text(
+                        text = "He is at home now",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                }
+                Button(
+                    onClick = {
+                        getSentence()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            top = dimensionResource(id = R.dimen.padding_large)
+                        )
+                ) {
+                    Text(text = "Продолжить")
+                }
+            }
+        }
     }
 }
+
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

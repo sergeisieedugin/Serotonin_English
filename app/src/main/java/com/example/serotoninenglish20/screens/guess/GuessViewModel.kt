@@ -10,7 +10,7 @@ import com.example.serotoninenglish20.api.Api
 import kotlinx.coroutines.launch
 
 
-class GuessViewModel: ViewModel(){
+class GuessViewModel : ViewModel() {
     private val _guessItems = MutableLiveData<Sentence>()
     val guessItems: LiveData<Sentence> = _guessItems
 
@@ -18,70 +18,71 @@ class GuessViewModel: ViewModel(){
     var chosenWords: MutableList<String> = mutableStateListOf()
 
     private val _sentenceDescription = MutableLiveData<Description>()
-    val sentenceDescription:LiveData<Description> = _sentenceDescription
+    val sentenceDescription: LiveData<Description> = _sentenceDescription
 
 
     private val _guessFilters = MutableLiveData<Filters>()
     val guessFilters: LiveData<Filters> = _guessFilters
 
+
     init {
         fetchSentence()
     }
 
-    fun fetchSentence(){
+    fun fetchSentence() {
         viewModelScope.launch {
             try {
                 _guessItems.value = Api.retrofitService.getSentence()
                 chosenWords.clear()
                 words.clear()
                 words.addAll(_guessItems.value!!.wordsToChoose.toMutableList())
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 Log.d("SentenceMessage", e.message.toString())
             }
         }
     }
 
-    fun fetchFilters(){
+    fun fetchFilters() {
         viewModelScope.launch {
-            try{
+            try {
                 _guessFilters.value = Api.retrofitService.getFilters()
                 Log.d("FiltersMessage", "Done")
-            }catch (e:Exception){
+            } catch (e: Exception) {
                 Log.d("FilterMessage", e.message.toString())
             }
         }
     }
 
-    fun checkAnswer(){
-        viewModelScope.launch {
-            try{
-                val checkValid = Api.retrofitService.checkAnswer(_guessItems.value!!.russianPhrase, chosenWords.joinToString(separator = ","))
-                if (checkValid != null) {
-                    Log.d("CheckAnswer", checkValid.toString())
-                }
-            }catch (e:Exception){
-                Log.d("CheckAnswer", e.message.toString())
-            }
+    suspend fun checkAnswer(): Boolean {
+        try {
+            val isValid = Api.retrofitService.checkAnswer(
+                _guessItems.value!!.russianPhrase,
+                chosenWords.joinToString(separator = ",")
+            )
+            return isValid.isValid
+        } catch (e: Exception) {
+            Log.d("CheckAnswer", e.message.toString())
+            return false
         }
     }
 
-    fun fetchDescription(){
+    fun fetchDescription() {
         viewModelScope.launch {
             try {
                 _sentenceDescription.value = Api.retrofitService.getDescription()
                 Log.d("Description", "Done")
-            }catch (e:Exception){
+            } catch (e: Exception) {
                 Log.d("Description", e.message.toString())
             }
         }
     }
 
-    fun toChosenWords(index:Int){
+    fun toChosenWords(index: Int) {
         chosenWords.add(words[index])
         words.removeAt(index)
     }
 
-    fun deleteFromChosen(index:Int){
+    fun deleteFromChosen(index: Int) {
         words.add(chosenWords[index])
         chosenWords.removeAt(index)
     }
