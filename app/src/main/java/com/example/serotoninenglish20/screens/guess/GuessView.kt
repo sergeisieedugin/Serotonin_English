@@ -46,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -168,7 +169,7 @@ fun GuessView(guessViewModel: GuessViewModel = viewModel()) {
                     ) {
                         Text(
                             text = stringResource(id = R.string.button_check),
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.titleMedium
                         )
                     }
                 }
@@ -176,9 +177,10 @@ fun GuessView(guessViewModel: GuessViewModel = viewModel()) {
             InfoBottomSheet(guessViewModel, showBottomSheet) {
                 showBottomSheet = !showBottomSheet
             }
-           ValidBottomSheet(isAnswerValid = isAnswerValid, showValidBottomSheet = showValidBottomSheet) {
-               guessViewModel.fetchSentence()
-            }
+           ValidBottomSheet(isAnswerValid = isAnswerValid, showValidBottomSheet = showValidBottomSheet,
+               {guessViewModel.fetchSentence()},
+               {showValidBottomSheet = !showValidBottomSheet}
+               )
         }
     }
 }
@@ -263,13 +265,14 @@ fun InfoBottomSheet(guessViewModel: GuessViewModel, showBottomSheet: Boolean, on
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ValidBottomSheet(isAnswerValid: Boolean?, showValidBottomSheet: Boolean, getSentence: () -> Unit) {
+fun ValidBottomSheet(isAnswerValid: Boolean?, showValidBottomSheet: Boolean, getSentence: () -> Unit, onClose: () -> Unit) {
     val sheetState = rememberModalBottomSheetState()
     if (showValidBottomSheet) {
         ModalBottomSheet(
-            onDismissRequest = {  },
+            onDismissRequest = { onClose() },
             sheetState = sheetState,
             windowInsets = WindowInsets.navigationBars,
             dragHandle = null
@@ -278,48 +281,94 @@ fun ValidBottomSheet(isAnswerValid: Boolean?, showValidBottomSheet: Boolean, get
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        dimensionResource(id = R.dimen.padding_large)
+                        start = dimensionResource(id = R.dimen.padding_large),
+                        end = dimensionResource(id = R.dimen.padding_large),
+                        bottom = dimensionResource(id = R.dimen.padding_large),
+                        top = 32.dp
                     )
             ) {
                 if (isAnswerValid == false){
-                    Text(
-                        text = "Не верно"
-                    )
-                } else{
-                    Text(
-                        text = "Верно",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                }
-
-
-
-                Column {
-                    Text(
-                        text = stringResource(id = R.string.answer),
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier
-                            .padding(
-                                top = dimensionResource(id = R.dimen.padding_medium)
-                            )
-                    )
-                    Text(
-                        text = "He is at home now",
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                }
-                Button(
-                    onClick = {
-                        getSentence()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            top = dimensionResource(id = R.dimen.padding_large)
+                    Row (
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.error_24px),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier
+                                .size(42.dp)
+                                .padding(end = dimensionResource(id = R.dimen.padding_small))
                         )
-                ) {
-                    Text(text = "Продолжить")
+                        Text(
+                            text = "Не верно",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = stringResource(id = R.string.answer),
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier
+                                .padding(
+                                    top = dimensionResource(id = R.dimen.padding_medium)
+                                )
+                        )
+                        Text(
+                            text = "He is at home now",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            getSentence()
+                            onClose()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                top = dimensionResource(id = R.dimen.padding_large)
+                            )
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.continue_button),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                } else{
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.check_circle_24px),
+                            contentDescription = null,
+                            tint = Color(0xFF67B90D),
+                            modifier = Modifier
+                                .size(42.dp)
+                                .padding(end = dimensionResource(id = R.dimen.padding_small))
+                        )
+                        Text(
+                            text = "Верно",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            getSentence()
+                            onClose()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF67B90D)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                top = dimensionResource(id = R.dimen.padding_large)
+                            )
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.continue_button),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
                 }
             }
         }
