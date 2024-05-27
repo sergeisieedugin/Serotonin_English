@@ -1,7 +1,5 @@
 package com.example.serotoninenglish20.screens.topics
-import com.google.gson.annotations.SerializedName
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+
 
 
 data class Topic(
@@ -12,5 +10,6 @@ data class Topic(
 
 data class SubTopic(
     val title: String,
-    val description: String
+    val description: String,
+    val path: String
 )

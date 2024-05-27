@@ -2,6 +2,7 @@ package com.example.serotoninenglish20.screens.guess
 
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -14,6 +15,11 @@ class GuessViewModel : ViewModel() {
     private val _guessItems = MutableLiveData<Sentence>()
     val guessItems: LiveData<Sentence> = _guessItems
 
+    var themePath: String = ""
+
+    var filterState = mutableStateOf(mapOf<String, Boolean>())
+
+
     var words: MutableList<String> = mutableStateListOf()
     var chosenWords: MutableList<String> = mutableStateListOf()
 
@@ -24,15 +30,10 @@ class GuessViewModel : ViewModel() {
     private val _guessFilters = MutableLiveData<Filters>()
     val guessFilters: LiveData<Filters> = _guessFilters
 
-
-    init {
-        fetchSentence()
-    }
-
     fun fetchSentence() {
         viewModelScope.launch {
             try {
-                _guessItems.value = Api.retrofitService.getSentence()
+                _guessItems.value = Api.retrofitService.getSentence(themePath)
                 chosenWords.clear()
                 words.clear()
                 words.addAll(_guessItems.value!!.wordsToChoose.toMutableList())
@@ -46,6 +47,14 @@ class GuessViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 _guessFilters.value = Api.retrofitService.getFilters()
+
+                val state = mutableMapOf<String, Boolean>()
+                _guessFilters.value!!.types.forEach {
+                    state[it.titleName] = true
+                }
+
+                filterState.value = state
+
                 Log.d("FiltersMessage", "Done")
             } catch (e: Exception) {
                 Log.d("FilterMessage", e.message.toString())

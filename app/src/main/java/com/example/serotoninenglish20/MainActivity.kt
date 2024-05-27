@@ -25,6 +25,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val topicViewModel: TopicViewModel by viewModels()
         val guessViewModel: GuessViewModel by viewModels()
+
         setContent {
             AppTheme {
                 // A surface container using the 'background' color from the theme
@@ -33,14 +34,21 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    NavHost(navController = navController, startDestination = "guess_view"){
+                    NavHost(
+                        navController = navController,
+                        startDestination = "topics_view"
+                    ){
                         composable("topics_view"){
                             TopicsView(topicViewModel = topicViewModel){
-                                navController.navigate("")
+                                guessViewModel.themePath = it
+                                guessViewModel.fetchSentence()
+                                navController.navigate("guess_view")
                             }
                         }
                         composable("guess_view"){
-                            GuessView(guessViewModel)
+                            GuessView(guessViewModel){
+                                navController.navigate("topics_view")
+                            }
                         }
                     }
                 }

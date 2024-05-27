@@ -1,8 +1,6 @@
 package com.example.serotoninenglish20.screens.guess
 
 import com.google.gson.annotations.SerializedName
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 
 
@@ -10,7 +8,7 @@ data class Types(
     @SerializedName(value= "id")
     val identification: Int,
     @SerializedName(value = "title")
-    val titleName: String
+    val titleName: String,
 )
 
 

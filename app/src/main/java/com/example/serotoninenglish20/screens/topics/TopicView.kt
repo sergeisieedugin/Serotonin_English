@@ -1,14 +1,13 @@
 package com.example.serotoninenglish20.screens.topics
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.compose.primaryLight
 import com.example.serotoninenglish20.R
 
 
@@ -46,8 +44,10 @@ fun TopicsView(topicViewModel: TopicViewModel, onClick: (path: String) -> Unit) 
         items(topics as List<Topic>) {
             TopicCard(
                 title = it.title,
-                topicList = it.child
-            )
+                topicList = it.child,
+            ) {
+                onClick(it)
+            }
         }
     }
 }
@@ -56,7 +56,7 @@ fun TopicsView(topicViewModel: TopicViewModel, onClick: (path: String) -> Unit) 
 fun TopicCard(
     title: String,
     topicList: List<SubTopic>,
-    modifier: Modifier = Modifier
+    onClick: (path: String) -> Unit
 ) {
     Text(
         text = title,
@@ -73,11 +73,13 @@ fun TopicCard(
             .animateContentSize { initialValue, targetValue -> }
             .fillMaxWidth()
             .padding(dimensionResource(R.dimen.padding_small))
-    )
+    ) {
+        onClick(it)
+    }
 }
 
 @Composable
-fun Cards(topicList: List<SubTopic>, modifier: Modifier = Modifier) {
+fun Cards(topicList: List<SubTopic>, modifier: Modifier = Modifier,  onClick: (path: String) -> Unit) {
 
     topicList.forEach { cardItems ->
         Card(
@@ -88,6 +90,9 @@ fun Cards(topicList: List<SubTopic>, modifier: Modifier = Modifier) {
                 defaultElevation = 2.dp
             ),
             modifier = modifier
+                .clickable {
+                    onClick(cardItems.path)
+                }
         ) {
             var expanded by rememberSaveable {
                 mutableStateOf(false)

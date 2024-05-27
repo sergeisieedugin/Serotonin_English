@@ -1,5 +1,6 @@
 package com.example.serotoninenglish20.screens.guess
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,15 +24,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -48,20 +53,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.serotoninenglish20.R
 import kotlinx.coroutines.launch
 
 
 @Composable
-fun GuessView(guessViewModel: GuessViewModel = viewModel()) {
+fun GuessView(guessViewModel: GuessViewModel, navigate: () -> Unit) {
     val guessSentence by guessViewModel.guessItems.observeAsState()
 
+
     var showBottomSheet by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var showFilterDialog by rememberSaveable {
         mutableStateOf(false)
     }
 
@@ -83,10 +92,12 @@ fun GuessView(guessViewModel: GuessViewModel = viewModel()) {
 
     Scaffold(
         topBar = {
-            TopBar()
+            TopBar(
+                { showFilterDialog = true},
+                { navigate() }
+            )
         }
     ) { contentPadding ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -174,13 +185,17 @@ fun GuessView(guessViewModel: GuessViewModel = viewModel()) {
                     }
                 }
             }
+            FilterDialog(GuessViewModel(), showFilterDialog, {
+                showFilterDialog = !showFilterDialog
+            })
             InfoBottomSheet(guessViewModel, showBottomSheet) {
                 showBottomSheet = !showBottomSheet
             }
-           ValidBottomSheet(isAnswerValid = isAnswerValid, showValidBottomSheet = showValidBottomSheet,
-               {guessViewModel.fetchSentence()},
-               {showValidBottomSheet = !showValidBottomSheet}
-               )
+            ValidBottomSheet(isAnswerValid = isAnswerValid,
+                showValidBottomSheet = showValidBottomSheet,
+                { guessViewModel.fetchSentence() },
+                { showValidBottomSheet = !showValidBottomSheet }
+            )
         }
     }
 }
@@ -188,7 +203,7 @@ fun GuessView(guessViewModel: GuessViewModel = viewModel()) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar() {
+fun TopBar(openFilters: () -> Unit, navigate: () -> Unit) {
     TopAppBar(
         colors = topAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -196,12 +211,96 @@ fun TopBar() {
             navigationIconContentColor = MaterialTheme.colorScheme.primary
         ),
         navigationIcon = {
-            Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
+            IconButton(
+                onClick = { navigate() }) {
+                Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
+            }
         },
         title = {
             Text("Present simple")
         },
+        actions = {
+            IconButton(onClick = { openFilters() }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.page_info_24px),
+                    tint = MaterialTheme.colorScheme.primary,
+                    contentDescription = null
+                )
+            }
+        }
     )
+}
+
+@Composable
+fun FilterDialog(guessViewModel: GuessViewModel, showFilterDialog: Boolean, onClose: () -> Unit) {
+    val filters by guessViewModel.guessFilters.observeAsState()
+    val filterState by guessViewModel.filterState
+
+    if (showFilterDialog) {
+        AlertDialog(
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.page_info_24px),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(32.dp)
+                )
+            },
+            title = {
+                Text(text = "Фильтры")
+            },
+            text = {
+                Column {
+                    Text(
+                        text = stringResource(id = R.string.choose_sentence_type)
+                    )
+
+                    filters?.types?.forEach { filter ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = filterState[filter.titleName] == true,
+                                onCheckedChange = {
+                                    guessViewModel.filterState.value = filterState.plus(mapOf(
+                                        filter.titleName to it
+                                    ))
+                                    Log.d("1234", guessViewModel.filterState.toString())
+                                }
+                            )
+                            Text(
+                                text = filter.titleName,
+                                lineHeight = 1.2.em,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            onDismissRequest = {
+                onClose()
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+
+                    }
+                ) {
+                    Text("Сохранить")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        onClose()
+                    }
+                ) {
+                    Text("Отменить")
+                }
+            }
+        )
+    }
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -209,6 +308,7 @@ fun TopBar() {
 fun InfoBottomSheet(guessViewModel: GuessViewModel, showBottomSheet: Boolean, onClose: () -> Unit) {
     val description by guessViewModel.sentenceDescription.observeAsState()
     val sheetState = rememberModalBottomSheetState()
+
 
     if (showBottomSheet) {
         ModalBottomSheet(
@@ -268,7 +368,12 @@ fun InfoBottomSheet(guessViewModel: GuessViewModel, showBottomSheet: Boolean, on
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ValidBottomSheet(isAnswerValid: Boolean?, showValidBottomSheet: Boolean, getSentence: () -> Unit, onClose: () -> Unit) {
+fun ValidBottomSheet(
+    isAnswerValid: Boolean?,
+    showValidBottomSheet: Boolean,
+    getSentence: () -> Unit,
+    onClose: () -> Unit
+) {
     val sheetState = rememberModalBottomSheetState()
     if (showValidBottomSheet) {
         ModalBottomSheet(
@@ -287,8 +392,8 @@ fun ValidBottomSheet(isAnswerValid: Boolean?, showValidBottomSheet: Boolean, get
                         top = 32.dp
                     )
             ) {
-                if (isAnswerValid == false){
-                    Row (
+                if (isAnswerValid == false) {
+                    Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -300,7 +405,7 @@ fun ValidBottomSheet(isAnswerValid: Boolean?, showValidBottomSheet: Boolean, get
                                 .padding(end = dimensionResource(id = R.dimen.padding_small))
                         )
                         Text(
-                            text = "Не верно",
+                            text = stringResource(id = R.string.invalid),
                             style = MaterialTheme.typography.headlineMedium
                         )
                     }
@@ -335,7 +440,7 @@ fun ValidBottomSheet(isAnswerValid: Boolean?, showValidBottomSheet: Boolean, get
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
-                } else{
+                } else {
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -348,7 +453,7 @@ fun ValidBottomSheet(isAnswerValid: Boolean?, showValidBottomSheet: Boolean, get
                                 .padding(end = dimensionResource(id = R.dimen.padding_small))
                         )
                         Text(
-                            text = "Верно",
+                            text = stringResource(id = R.string.valid),
                             style = MaterialTheme.typography.headlineMedium
                         )
                     }
@@ -411,9 +516,4 @@ fun Chips(
 }
 
 
-@Preview
-@Composable
-fun guessPreview() {
-    GuessView(guessViewModel = GuessViewModel())
-}
 
