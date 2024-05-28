@@ -14,12 +14,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -70,6 +71,8 @@ fun GuessView(guessViewModel: GuessViewModel, navigate: () -> Unit) {
         mutableStateOf(false)
     }
 
+    val scrollState = rememberScrollState()
+
     var showFilterDialog by rememberSaveable {
         mutableStateOf(false)
     }
@@ -89,28 +92,28 @@ fun GuessView(guessViewModel: GuessViewModel, navigate: () -> Unit) {
         guessViewModel.words
     }
 
-
     Scaffold(
         topBar = {
             TopBar(
-                { showFilterDialog = true},
+                { showFilterDialog = true },
                 { navigate() }
             )
         }
-    ) { contentPadding ->
-        Column(
+    ) {
+        LazyColumn(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(contentPadding)
+                .padding(it)
+                .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp)
+
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, end = 8.dp, bottom = 24.dp)
-            ) {
+            // заголовок и поле с чипсами
+            item {
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -157,16 +160,19 @@ fun GuessView(guessViewModel: GuessViewModel, navigate: () -> Unit) {
                         guessViewModel.deleteFromChosen(it)
                     }
                 }
-                Spacer(modifier = Modifier.fillMaxHeight(0.5F))
+            }
+            // чипсы и кнопка
+            item {
                 Column(
                     modifier = Modifier
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.SpaceBetween,
+                        .fillMaxSize()
+                        .padding(bottom = dimensionResource(id = R.dimen.padding_large)),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Chips(words, Arrangement.Center) {
                         guessViewModel.toChosenWords(it)
                     }
+
                     Button(
                         onClick = {
                             guessViewModel.viewModelScope.launch {
@@ -177,6 +183,7 @@ fun GuessView(guessViewModel: GuessViewModel, navigate: () -> Unit) {
                         enabled = if (chosenWords.isEmpty()) false else true,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(top = 32.dp)
                     ) {
                         Text(
                             text = stringResource(id = R.string.button_check),
@@ -185,18 +192,20 @@ fun GuessView(guessViewModel: GuessViewModel, navigate: () -> Unit) {
                     }
                 }
             }
-            FilterDialog(GuessViewModel(), showFilterDialog, {
-                showFilterDialog = !showFilterDialog
-            })
-            InfoBottomSheet(guessViewModel, showBottomSheet) {
-                showBottomSheet = !showBottomSheet
-            }
-            ValidBottomSheet(isAnswerValid = isAnswerValid,
-                showValidBottomSheet = showValidBottomSheet,
-                { guessViewModel.fetchSentence() },
-                { showValidBottomSheet = !showValidBottomSheet }
-            )
+
+
         }
+        FilterDialog(GuessViewModel(), showFilterDialog) {
+            showFilterDialog = !showFilterDialog
+        }
+        InfoBottomSheet(guessViewModel, showBottomSheet) {
+            showBottomSheet = !showBottomSheet
+        }
+        ValidBottomSheet(isAnswerValid = isAnswerValid,
+            showValidBottomSheet = showValidBottomSheet,
+            { guessViewModel.fetchSentence() },
+            { showValidBottomSheet = !showValidBottomSheet }
+        )
     }
 }
 
@@ -262,9 +271,11 @@ fun FilterDialog(guessViewModel: GuessViewModel, showFilterDialog: Boolean, onCl
                             Checkbox(
                                 checked = filterState[filter.titleName] == true,
                                 onCheckedChange = {
-                                    guessViewModel.filterState.value = filterState.plus(mapOf(
-                                        filter.titleName to it
-                                    ))
+                                    guessViewModel.filterState.value = filterState.plus(
+                                        mapOf(
+                                            filter.titleName to it
+                                        )
+                                    )
                                     Log.d("1234", guessViewModel.filterState.toString())
                                 }
                             )
@@ -486,6 +497,7 @@ fun ValidBottomSheet(
 fun Chips(
     words: List<String>,
     arrangement: Arrangement.Horizontal,
+    modifier: Modifier = Modifier,
     clickable: (index: Int) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
