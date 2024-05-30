@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,25 +36,30 @@ fun TopicsView(topicViewModel: TopicViewModel, onClick: (path: String) -> Unit) 
     if (topics.isNullOrEmpty()) {
         return
     }
-    LazyColumn(
-        contentPadding = PaddingValues(
-            top = dimensionResource(id = R.dimen.padding_large),
-            bottom = dimensionResource(id = R.dimen.padding_large)
-        )
-    ) {
-        items(topics as List<Topic>) {
-            TopicCard(
-                title = it.title,
-                topicList = it.child,
-            ) {
-                onClick(it)
+    Scaffold {
+        LazyColumn(
+            contentPadding = PaddingValues(
+                top = dimensionResource(id = R.dimen.padding_large),
+                bottom = dimensionResource(id = R.dimen.padding_large)
+            ),
+            modifier = Modifier
+                .padding(it)
+        ) {
+            items(topics as List<Topic>) {
+                TopicCardList(
+                    title = it.title,
+                    topicList = it.child,
+                ) {
+                    onClick(it)
+                }
             }
         }
     }
+
 }
 
 @Composable
-fun TopicCard(
+fun TopicCardList(
     title: String,
     topicList: List<SubTopic>,
     onClick: (path: String) -> Unit
@@ -67,7 +73,7 @@ fun TopicCard(
                 bottom = dimensionResource(R.dimen.padding_small)
             )
     )
-    Cards(
+    Card(
         topicList = topicList,
         modifier = Modifier
             .animateContentSize { initialValue, targetValue -> }
@@ -79,7 +85,7 @@ fun TopicCard(
 }
 
 @Composable
-fun Cards(topicList: List<SubTopic>, modifier: Modifier = Modifier,  onClick: (path: String) -> Unit) {
+fun Card(topicList: List<SubTopic>, modifier: Modifier = Modifier,  onClick: (path: String) -> Unit) {
 
     topicList.forEach { cardItems ->
         Card(
@@ -125,3 +131,4 @@ fun Cards(topicList: List<SubTopic>, modifier: Modifier = Modifier,  onClick: (p
         }
     }
 }
+
