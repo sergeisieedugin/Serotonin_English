@@ -17,7 +17,7 @@ class GuessViewModel : ViewModel() {
 
     var themePath: String = ""
 
-    var filterState = mutableStateOf(mapOf<String, Boolean>())
+    var filterState: MutableList<Int> = mutableStateListOf()
 
 
     var words: MutableList<String> = mutableStateListOf()
@@ -33,7 +33,8 @@ class GuessViewModel : ViewModel() {
     fun fetchSentence() {
         viewModelScope.launch {
             try {
-                _guessItems.value = Api.retrofitService.getSentence(themePath)
+                val types = filterState.joinToString(",")
+                _guessItems.value = Api.retrofitService.getSentence(themePath, types)
                 chosenWords.clear()
                 words.clear()
                 words.addAll(_guessItems.value!!.wordsToChoose.toMutableList())
@@ -43,19 +44,23 @@ class GuessViewModel : ViewModel() {
         }
     }
 
+    fun setNewFilterState (value: MutableList<Int>) {
+        filterState.clear()
+        filterState.addAll(value)
+        fetchSentence()
+    }
+
     fun fetchFilters() {
         viewModelScope.launch {
             try {
                 _guessFilters.value = Api.retrofitService.getFilters()
 
-                val state = mutableMapOf<String, Boolean>()
+                filterState.clear()
                 _guessFilters.value!!.types.forEach {
-                    state[it.titleName] = true
+                    filterState.add(it.identification)
                 }
 
-                filterState.value = state
-
-                Log.d("FiltersMessage", "Done")
+                Log.d("FiltersMessage", _guessFilters.value?.types?.size.toString())
             } catch (e: Exception) {
                 Log.d("FilterMessage", e.message.toString())
             }

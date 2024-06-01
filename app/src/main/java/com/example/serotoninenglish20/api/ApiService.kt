@@ -12,6 +12,7 @@ import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 
 private const val BASE_URL = "http://english.serotonin.site/api/"
@@ -27,7 +28,8 @@ interface ApiService {
 
     @GET("sentences/{theme}")
     suspend fun getSentence(
-        @Path("theme") theme: String
+        @Path("theme") theme: String,
+        @Query("types") types: String
     ): Sentence
 
     @GET("sentences/types")

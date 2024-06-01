@@ -1,6 +1,5 @@
 package com.example.serotoninenglish20.screens.guess
 
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -45,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -66,12 +65,9 @@ import kotlinx.coroutines.launch
 fun GuessView(guessViewModel: GuessViewModel, navigate: () -> Unit) {
     val guessSentence by guessViewModel.guessItems.observeAsState()
 
-
     var showBottomSheet by rememberSaveable {
         mutableStateOf(false)
     }
-
-    val scrollState = rememberScrollState()
 
     var showFilterDialog by rememberSaveable {
         mutableStateOf(false)
@@ -95,6 +91,7 @@ fun GuessView(guessViewModel: GuessViewModel, navigate: () -> Unit) {
     Scaffold(
         topBar = {
             TopBar(
+                guessViewModel.themePath,
                 { showFilterDialog = true },
                 { navigate() }
             )
@@ -183,7 +180,7 @@ fun GuessView(guessViewModel: GuessViewModel, navigate: () -> Unit) {
                         enabled = if (chosenWords.isEmpty()) false else true,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 32.dp)
+                            .padding(top = 64.dp)
                     ) {
                         Text(
                             text = stringResource(id = R.string.button_check),
@@ -192,16 +189,18 @@ fun GuessView(guessViewModel: GuessViewModel, navigate: () -> Unit) {
                     }
                 }
             }
-
-
         }
-        FilterDialog(GuessViewModel(), showFilterDialog) {
-            showFilterDialog = !showFilterDialog
+        if (showFilterDialog) {
+            FilterDialog(guessViewModel) {
+                showFilterDialog = !showFilterDialog
+            }
         }
+
         InfoBottomSheet(guessViewModel, showBottomSheet) {
             showBottomSheet = !showBottomSheet
         }
-        ValidBottomSheet(isAnswerValid = isAnswerValid,
+        ValidBottomSheet(
+            isAnswerValid = isAnswerValid,
             showValidBottomSheet = showValidBottomSheet,
             { guessViewModel.fetchSentence() },
             { showValidBottomSheet = !showValidBottomSheet }
@@ -212,7 +211,7 @@ fun GuessView(guessViewModel: GuessViewModel, navigate: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar(openFilters: () -> Unit, navigate: () -> Unit) {
+fun TopBar(topBarTitle: String, openFilters: () -> Unit, navigate: () -> Unit) {
     TopAppBar(
         colors = topAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -222,11 +221,14 @@ fun TopBar(openFilters: () -> Unit, navigate: () -> Unit) {
         navigationIcon = {
             IconButton(
                 onClick = { navigate() }) {
-                Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = null
+                )
             }
         },
         title = {
-            Text("Present simple")
+            Text(topBarTitle.replaceFirstChar { it.uppercase() })
         },
         actions = {
             IconButton(onClick = { openFilters() }) {
@@ -241,78 +243,82 @@ fun TopBar(openFilters: () -> Unit, navigate: () -> Unit) {
 }
 
 @Composable
-fun FilterDialog(guessViewModel: GuessViewModel, showFilterDialog: Boolean, onClose: () -> Unit) {
+fun FilterDialog(guessViewModel: GuessViewModel, onClose: () -> Unit) {
     val filters by guessViewModel.guessFilters.observeAsState()
-    val filterState by guessViewModel.filterState
-
-    if (showFilterDialog) {
-        AlertDialog(
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.page_info_24px),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(32.dp)
-                )
-            },
-            title = {
-                Text(text = "Фильтры")
-            },
-            text = {
-                Column {
-                    Text(
-                        text = stringResource(id = R.string.choose_sentence_type)
-                    )
-
-                    filters?.types?.forEach { filter ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = filterState[filter.titleName] == true,
-                                onCheckedChange = {
-                                    guessViewModel.filterState.value = filterState.plus(
-                                        mapOf(
-                                            filter.titleName to it
-                                        )
-                                    )
-                                    Log.d("1234", guessViewModel.filterState.toString())
-                                }
-                            )
-                            Text(
-                                text = filter.titleName,
-                                lineHeight = 1.2.em,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                    }
-                }
-            },
-            onDismissRequest = {
-                onClose()
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-
-                    }
-                ) {
-                    Text("Сохранить")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        onClose()
-                    }
-                ) {
-                    Text("Отменить")
-                }
-            }
-        )
+    val filterLocalState = remember {
+        val state = mutableStateListOf<Int>()
+        state.addAll(guessViewModel.filterState)
+        state
     }
 
+    AlertDialog(
+        icon = {
+            Icon(
+                painter = painterResource(id = R.drawable.page_info_24px),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(32.dp)
+            )
+        },
+        title = {
+            Text(text = "Фильтры")
+        },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(id = R.string.choose_sentence_type)
+                )
+
+                filters?.types?.forEach { filter ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            onCheckedChange = { isChecked ->
+                                if (isChecked) {
+                                    filterLocalState.add(filter.identification)
+                                } else {
+                                    filterLocalState.remove(filter.identification)
+                                }
+                            },
+                            checked = filterLocalState.contains(filter.identification)
+                        )
+                        Text(
+                            text = filter.titleName,
+                            lineHeight = 1.2.em,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
+        },
+        onDismissRequest = {
+            onClose()
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    guessViewModel.setNewFilterState(filterLocalState)
+                    onClose()
+                }
+            ) {
+                Text("Сохранить")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    onClose()
+                }
+            ) {
+                Text("Отменить")
+            }
+        }
+    )
+
+
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -497,7 +503,6 @@ fun ValidBottomSheet(
 fun Chips(
     words: List<String>,
     arrangement: Arrangement.Horizontal,
-    modifier: Modifier = Modifier,
     clickable: (index: Int) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
